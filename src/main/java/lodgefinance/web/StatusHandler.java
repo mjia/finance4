@@ -29,41 +29,45 @@ public class StatusHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         try {
-            if (!"/".equals(exchange.getRequestURI().getPath())) {
-                send(exchange, 404, "Page not found.", "text/plain");
-                return;
+            String path = exchange.getRequestURI().getPath();
+            switch (path) {
+                case "/" -> handleRoot(exchange);
+                default -> send(exchange, 404, "Page not found.", "text/plain");
             }
-            if (!"GET".equals(exchange.getRequestMethod())) {
-                exchange.getResponseHeaders().set("Allow", "GET");
-                send(exchange, 405, "Only GET is supported.", "text/plain");
-                return;
-            }
-
-            String databaseStatus = "Connected";
-            String userCount = "Unavailable";
-            String transactionCount = "Unavailable";
-            int statusCode = 200;
-            String sql = "SELECT (SELECT COUNT(*) FROM USERS) AS users, "
-                    + "(SELECT COUNT(*) FROM TRANSACTIONS) AS transactions";
-            try (Connection connection = database.getConnection();
-                 Statement statement = connection.createStatement();
-                 ResultSet rows = statement.executeQuery(sql)) {
-                rows.next();
-                userCount = Integer.toString(rows.getInt("users"));
-                transactionCount = Integer.toString(rows.getInt("transactions"));
-            } catch (SQLException exception) {
-                databaseStatus = "Unavailable";
-                statusCode = 503;
-                System.err.println("Status check failed: " + exception.getMessage());
-            }
-
-            String html = page.replace("{{databaseStatus}}", databaseStatus)
-                    .replace("{{userCount}}", userCount)
-                    .replace("{{transactionCount}}", transactionCount);
-            send(exchange, statusCode, html, "text/html");
         } finally {
             exchange.close();
         }
+    }
+
+    private void handleRoot(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            exchange.getResponseHeaders().set("Allow", "GET");
+            send(exchange, 405, "Only GET is supported.", "text/plain");
+            return;
+        }
+
+        String databaseStatus = "Connected";
+        String userCount = "Unavailable";
+        String transactionCount = "Unavailable";
+        int statusCode = 200;
+        String sql = "SELECT (SELECT COUNT(*) FROM USERS) AS users, "
+                + "(SELECT COUNT(*) FROM TRANSACTIONS) AS transactions";
+        try (Connection connection = database.getConnection();
+             Statement statement = connection.createStatement();
+             ResultSet rows = statement.executeQuery(sql)) {
+            rows.next();
+            userCount = Integer.toString(rows.getInt("users"));
+            transactionCount = Integer.toString(rows.getInt("transactions"));
+        } catch (SQLException exception) {
+            databaseStatus = "Unavailable";
+            statusCode = 503;
+            System.err.println("Status check failed: " + exception.getMessage());
+        }
+
+        String html = page.replace("{{databaseStatus}}", databaseStatus)
+                .replace("{{userCount}}", userCount)
+                .replace("{{transactionCount}}", transactionCount);
+        send(exchange, statusCode, html, "text/html");
     }
 
     private void send(HttpExchange exchange, int status, String body, String contentType) throws IOException {

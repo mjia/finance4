@@ -9,8 +9,10 @@ import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) {
-        Path databasePath = Path.of(System.getProperty("lodge.database", "data/lodge_finance.db"));
-        int port = Integer.parseInt(System.getProperty("lodge.port", "8080"));
+        //Path databasePath = Path.of(System.getProperty("lodge.database", "data/lodge_finance.db"));
+        //int port = Integer.parseInt(System.getProperty("lodge.port", "8080"));
+        Path databasePath = Path.of("data/lodge_finance.db");
+        int port = 8080;
 
         try {
             Database database = new Database(databasePath);
