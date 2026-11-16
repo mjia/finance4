@@ -28,14 +28,13 @@ public class StatusHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        try {
+        try (exchange) {
             String path = exchange.getRequestURI().getPath();
-            switch (path) {
-                case "/" -> handleRoot(exchange);
-                default -> send(exchange, 404, "Page not found.", "text/plain");
+            if ("/".equals(path)) {
+                handleRoot(exchange);
+            } else {
+                send(exchange, 404, "Page not found.", "text/plain");
             }
-        } finally {
-            exchange.close();
         }
     }
 
